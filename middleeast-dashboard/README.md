@@ -1,4 +1,38 @@
-# MiddleEast Dashboard - v1
+# MiddleEast Dashboard - v1.5
+
+## What changed in v1.7
+
+- Three screen controls sit in the map's top-right corner: **Full map**, **Full screen** and **Hide bars**.
+- **Full map** hides the KPI strip, the map's header row, the news drawer and its tab, the heading panels below the map, the layers panel and the footer note, so the map fills the window below the title. Press **Show panels** to bring them back.
+- **Full screen** hides the browser's tabs and address bar. A web page cannot start full screen by itself: the button or the F key needs a click or key press first. Whether the Windows taskbar hides was not tested on Windows; it can be set to auto-hide in Windows settings.
+- **Hide bars** (3, 4 or 5 seconds, or never; default 4 seconds) fades the header controls, the KPI strip, the map's header row, the news tab, the map tools, the zoom control and the footer note after no mouse, touch, wheel or key use. The title stays. Moving the mouse brings everything back. The bars do not hide while a dialog is open or while you type in a field.
+- Keys: **M** for Full map, **F** for Full screen.
+- The Full map state and the hide delay are kept in this browser only. They hold no personal data and no keys.
+- Tests: a browser suite for the controls (`tests/dom_layout_test.js`) and a Python test that the shipped page is exactly what `build_frontend.py` builds (`tests/test_layout_controls.py`).
+
+## Upgrading from an earlier version
+
+- Your API keys are kept in the folder `~/..middleeast_dashboard` in your user profile, so they carry over with no step.
+- Plotted custom markers are saved in `data/custom_markers.json` inside the dashboard folder. Copy that file from the old folder into the new one to keep them.
+- `data/cache.json` is rebuilt by the first poll after start, so nothing needs copying.
+
+## What changed in v1.4
+
+- India lies outside this map's area, so no India outline or highlight is drawn in this dashboard.
+- Military sites inside India's survey outline are not plotted. Civil points (pipelines, ports, airports, power plants) and news about India are shown.
+- Layers and the legend show only the categories that have data in this dashboard.
+
+## Permanent data updates
+- Update data (top bar) fetches the latest public data for this dashboard's layers now. The status line shows when data was last updated and when the next automatic update is due.
+- Automatic: every 7 days while the dashboard is running (the first run starts about 2 minutes after launch). Change update_every_days in data/dashboard.json; 0 switches automatic updates off.
+- Command line (for Windows Task Scheduler): python run.py --update-now runs one update and exits.
+- Sources, fixed in app/updates.py (no other address is ever fetched): OurAirports airports (public domain); WRI Global Power Plant Database, nuclear plants (CC BY 4.0); UCDP georeferenced conflict events from the last 30 days (CC BY 4.0); OpenStreetMap military sites, ports and pipelines as points (ODbL, © OpenStreetMap contributors).
+- Only layers this dashboard already shows are updated. Curated points are never overwritten; a new point within 2 km of a point in the same layer is skipped. Each point shows its source, licence, accuracy rating and fetch date.
+- OpenStreetMap points are crowd-sourced (accuracy Medium): check them before relying on them. Pipelines and cables are shown as points here; their route lines are not updated automatically.
+- If a source cannot be reached, its last good data stays and the error is shown in data/updates/status.json.
+- Military sites inside India's outline are never added to a dashboard that is not in focus mode.
+
+- Start (start.bat) creates a shortcut named "MiddleEast Dashboard" on the Desktop and in the Start menu each time it runs, then opens http://127.0.0.1:8810/ in the browser. To pin it to the taskbar, right-click the Desktop shortcut and choose Pin to taskbar (Windows does not let a script pin apps).
 
 Covers the **17 states named in the brief** (Bahrain, Cyprus, Egypt, Iran, Iraq, Israel, Jordan, Kuwait, Lebanon,
 Oman, Palestine, Qatar, Saudi Arabia, Syria, Turkey, United Arab Emirates, Yemen) and **100 km around them**. Nothing
@@ -155,7 +189,7 @@ timelines (AAWSAT, Al Jazeera, AP); and the Houthi attacks (Wikipedia).
 
 ## Tests
 
-`pip install -r requirements.txt pytest`, then `python -m pytest tests/` (36 tests). The browser suites load the shipped
+`pip install -r requirements.txt pytest`, then `python -m pytest tests/` (39 tests). The browser suites load the shipped
 `dashboard.js` into a real DOM: `npm install` and `npm test`.
 
 ## Security

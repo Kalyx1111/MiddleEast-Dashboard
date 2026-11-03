@@ -261,3 +261,10 @@ MARKERS = [
      "note": "Russia-Syria MoU of 9 Aug 2026 on the Russian bases (see Hmeimim and Tartus). Other security events in Syria in 2026 were not verified in this build beyond the Masyaf strike of 2024.",
      "source": "Al Jazeera (9 Aug 2026); Wikipedia (Tartus naval base)"},
 ]
+
+# India rule (shared guard): nothing is plotted inside India's survey outline.
+try:
+    from .india_guard import clean_points as _india_points
+except ImportError:  # run as a plain script
+    from india_guard import clean_points as _india_points
+MARKERS = _india_points(MARKERS)

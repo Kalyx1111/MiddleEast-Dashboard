@@ -419,13 +419,33 @@
   // ---------------- running news ticker (unlocated news, newest first, bottom->top) ----------------
   function ts(it){ const d = parseItemDate(it.date); return d ? d.getTime() : 0; }
   function wireTickerPause(){
-    const viewport = document.getElementById("tickerViewport");
-    const track = document.getElementById("tickerTrack");
-    if(!viewport || !track) return;
-    viewport.onpointerenter = function(){ track.classList.add("paused"); };
-    viewport.onpointerleave = function(){ track.classList.remove("paused"); };
-    viewport.ontouchstart = function(){ track.classList.add("paused"); };
-    viewport.ontouchend = function(){ track.classList.remove("paused"); };
+    const btn = document.getElementById("tickerPause"), track = document.getElementById("tickerTrack");
+    const grid = document.getElementById("mainGrid"), tab = document.getElementById("newsTab"), hide = document.getElementById("newsHide");
+    const lb = document.getElementById("layersBtn"), lc = document.getElementById("layersClose"), mb = document.getElementById("mapBody");
+    if(btn && track && !btn.dataset.wired){
+      btn.dataset.wired = "1";
+      btn.addEventListener("click", function(){
+        const paused = track.classList.toggle("paused");
+        btn.textContent = paused ? "Resume" : "Pause";
+        btn.setAttribute("aria-pressed", String(paused));
+      });
+    }
+    function setNews(open){
+      if(!grid) return;
+      grid.classList.toggle("news-open", open);
+      grid.classList.toggle("news-closed", !open);
+      if(tab) tab.setAttribute("aria-expanded", String(open));
+    }
+    if(tab && !tab.dataset.wired){ tab.dataset.wired = "1"; tab.addEventListener("click", function(){ setNews(true); }); }
+    if(hide && !hide.dataset.wired){ hide.dataset.wired = "1"; hide.addEventListener("click", function(){ setNews(false); }); }
+    if(lb && mb && !lb.dataset.wired){
+      lb.dataset.wired = "1";
+      lb.addEventListener("click", function(){ lb.setAttribute("aria-expanded", String(mb.classList.toggle("layers-open"))); });
+    }
+    if(lc && mb && !lc.dataset.wired){
+      lc.dataset.wired = "1";
+      lc.addEventListener("click", function(){ mb.classList.remove("layers-open"); if(lb) lb.setAttribute("aria-expanded", "false"); });
+    }
   }
   function in72h(it){
     const d = parseItemDate(it.date);
@@ -598,7 +618,49 @@
     }
   });
 
+  // ---------------- permanent-data updates: the Update data button, its status line and the weekly schedule ----------------
+  function describeUpdate(s){
+    if(!s) return "";
+    if(s.running) return "Updating permanent data... this can take a few minutes";
+    if(!s.last_run) return "No update yet. Automatic updates run every " + (s.update_every_days || 7) + " days while the dashboard is open";
+    const last = new Date(s.last_run);
+    const next = s.next_run ? new Date(s.next_run) : null;
+    let text = "Data updated " + (isNaN(last) ? s.last_run : last.toLocaleString());
+    if(next && !isNaN(next)) text += " · next automatic update " + next.toLocaleString();
+    return text;
+  }
+  async function refreshUpdateStatus(){
+    const el = document.getElementById("updateStatus");
+    try{
+      const r = await fetch("/api/update/status", {cache: "no-store"});
+      const s = await r.json();
+      if(el) el.textContent = describeUpdate(s);
+      return s;
+    }catch(e){ if(el) el.textContent = "Update status unavailable"; return null; }
+  }
+  async function startDataUpdate(){
+    const btn = document.getElementById("updateBtn");
+    if(btn) btn.disabled = true;
+    try{
+      await fetch("/api/update/run", {method: "POST"});
+      for(let i = 0; i < 900; i++){
+        await new Promise(function(res){ setTimeout(res, 2000); });
+        const s = await refreshUpdateStatus();
+        if(!s || !s.running) break;
+      }
+      await loadData(true);
+    }catch(e){ const el = document.getElementById("updateStatus"); if(el) el.textContent = "Update could not start"; }
+    finally{ if(btn) btn.disabled = false; }
+  }
+  function wireDataUpdate(){
+    const btn = document.getElementById("updateBtn");
+    if(btn && !btn.dataset.wired){ btn.dataset.wired = "1"; btn.addEventListener("click", startDataUpdate); }
+    refreshUpdateStatus();
+  }
+
   // ---------------- boot ----------------
+  wireTickerPause();   // the news drawer and its controls work from the first moment, even before any news arrives
+  wireDataUpdate();
   loadCustomMarkers().then(function(){ loadData(false); });
   // auto-update news & data every 3 minutes, per request
   refreshTimer = setInterval(function(){ loadData(false); }, 3*60*1000);
